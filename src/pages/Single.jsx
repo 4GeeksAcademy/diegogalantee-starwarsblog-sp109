@@ -1,37 +1,59 @@
-// Import necessary hooks and components from react-router-dom and other libraries.
-import { Link, useParams } from "react-router-dom";  // To use link for navigation and useParams to get URL parameters
-import PropTypes from "prop-types";  // To define prop types for this component
-import rigoImageUrl from "../assets/img/rigo-baby.jpg"  // Import an image asset
-import useGlobalReducer from "../hooks/useGlobalReducer";  // Import a custom hook for accessing the global state
+import React, { useEffect, useState } from "react";
+import { useParams, useLocation } from "react-router-dom";
 
-// Define and export the Single component which displays individual item details.
-export const Single = props => {
-  // Access the global state using the custom hook.
-  const { store } = useGlobalReducer()
+const Single = () => {
+  const { uid } = useParams();
+  const pathParts = useLocation().pathname.split("/");
+  const type = pathParts[1];
 
-  // Retrieve the 'theId' URL parameter using useParams hook.
-  const { theId } = useParams()
-  const singleTodo = store.todos.find(todo => todo.id === parseInt(theId));
+  const [data, setData] = useState(null);
+  const [properties, setProperties] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      try {
+        const res = await fetch(`https://www.swapi.tech/api/${type}/${uid}`);
+        const json = await res.json();
+        setData(json.result);
+        setProperties(json.result.properties);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching details:", err);
+        setLoading(false);
+      }
+    };
+    fetchDetails();
+  }, [type, uid]);
+
+  if (loading) return <div className="text-center mt-5">Loading...</div>;
+  if (!data) return <div className="text-center mt-5 text-danger">Not Found</div>;
 
   return (
-    <div className="container text-center">
-      {/* Display the title of the todo element dynamically retrieved from the store using theId. */}
-      <h1 className="display-4">Todo: {singleTodo?.title}</h1>
-      <hr className="my-4" />  {/* A horizontal rule for visual separation. */}
-
-      {/* A Link component acts as an anchor tag but is used for client-side routing to prevent page reloads. */}
-      <Link to="/">
-        <span className="btn btn-primary btn-lg" href="#" role="button">
-          Back home
-        </span>
-      </Link>
+    <div className="container mt-5">
+      <div className="row g-4">
+        <div className="col-md-5 text-center">
+          <img
+            src="https://via.placeholder.com/800x600.png?text=800x600"
+            alt="400x200"
+            className="img-fluid rounded"
+          />
+        </div>
+        <div className="col-md-7">
+          <h1 className="mb-3">{data.properties.name}</h1>
+          <p className="text-muted fst-italic">UID: {data.uid}</p>
+          <hr />
+          <div className="row">
+            {Object.entries(properties).map(([key, value], index) => (
+              <div key={index} className="col-md-6 mb-2">
+                <strong>{key.replaceAll("_", " ")}:</strong> {value}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-// Use PropTypes to validate the props passed to this component, ensuring reliable behavior.
-Single.propTypes = {
-  // Although 'match' prop is defined here, it is not used in the component.
-  // Consider removing or using it as needed.
-  match: PropTypes.object
-};
+export default Single;

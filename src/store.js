@@ -1,32 +1,48 @@
-export const initialStore=()=>{
-  return{
-    message: null,
-    todos: [
-      {
-        id: 1,
-        title: "Make the bed",
-        background: null,
-      },
-      {
-        id: 2,
-        title: "Do my homework",
-        background: null,
-      }
-    ]
+export const initialStore = () => {
+  const localData = localStorage.getItem("store");
+  if (localData) {
+    try {
+      return JSON.parse(localData);
+    } catch (err) {
+      console.error("Error parsing localStorage store:", err);
+    }
   }
-}
+
+  // Estado por defecto si no hay nada guardado
+  return {
+    people: [],
+    planets: [],
+    vehicles: [],
+    favorites: []
+  };
+};
 
 export default function storeReducer(store, action = {}) {
-  switch(action.type){
-    case 'add_task':
-
-      const { id,  color } = action.payload
-
+  switch (action.type) {
+    case 'load_data':
       return {
         ...store,
-        todos: store.todos.map((todo) => (todo.id === id ? { ...todo, background: color } : todo))
+        [action.payload.category]: action.payload.data
       };
+
+    case 'add_favorite':
+      if (store.favorites.find(fav => fav.uid === action.payload.uid && fav.type === action.payload.type)) {
+        return store; // Ya está en favoritos
+      }
+      return {
+        ...store,
+        favorites: [...store.favorites, action.payload]
+      };
+
+    case 'remove_favorite':
+      return {
+        ...store,
+        favorites: store.favorites.filter(
+          fav => !(fav.uid === action.payload.uid && fav.type === action.payload.type)
+        )
+      };
+
     default:
-      throw Error('Unknown action.');
-  }    
+      throw new Error(`Unknown action: ${action.type}`);
+  }
 }
